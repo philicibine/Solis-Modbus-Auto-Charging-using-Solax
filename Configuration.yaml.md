@@ -66,7 +66,7 @@ Paste the following directly into your Configuration.yaml file
         unit_of_measurement: 'kWh'
         device_class: energy
         state: |-
-         {% set sum = states('sensor.solcast_forecast_remaining_today') | float(0) + states('sensor.soc_usable_kwh') | float(0) - (states('input_number.expected_consumption') | float(0) - states('sensor.solax_house_load_today') | float(0)) - (states('input_number.base_load') | float(0) * states('sensor.soc_charge_start_time_decimal') | float(0)) | round(2)%}
+         {% set sum = states('sensor.solcast_pv_forecast_remaining_today') | float(0) + states('sensor.soc_usable_kwh') | float(0) - (states('input_number.expected_consumption') | float(0) - states('sensor.solax_house_load_today') | float(0)) - (states('input_number.base_load') | float(0) * states('sensor.soc_charge_start_time_decimal') | float(0)) | round(2)%}
          {% set max = (states('sensor.soc_usableforcecharge') | float(0))%}
          {{ ([0, sum, max] | sort)[1] }}
   - sensor:
@@ -75,7 +75,7 @@ Paste the following directly into your Configuration.yaml file
         unit_of_measurement: 'kWh'
         device_class: energy
         state: |-
-         {% set sum = states('sensor.soc_at_start_of_offpeak_tonight') |float(0) - (states('input_number.offpeak_window') | float(0) * states('input_number.base_load') |float(0)) | round(2)%}
+         {% set sum = states('sensor.soc_at_start_of_offpeak_tonight') |float(0) - (3 * states('input_number.base_load') |float(0)) + states('input_number.boost_charge') |float(0) | round(2)%}
          {% set max = (states('sensor.soc_usableforcecharge') | float(0))%}
          {{ ([0, sum, max] | sort)[1] }}
   - sensor:
@@ -84,7 +84,7 @@ Paste the following directly into your Configuration.yaml file
         unit_of_measurement: 'kWh'
         device_class: energy
         state: |-
-         {% set sum = (states('sensor.soc_at_start_of_offpeak_tonight') | float(0) + states('sensor.soc_required_charge_plus_boost') | float(0) - (states('input_number.offpeak_window') | float(0) - states('sensor.soc_charge_time_decimal') | float(0)) * states('input_number.base_load') | float(0)) + states('input_number.boost_charge') | float(0)| round(2)%}
+         {% set sum = (states('sensor.soc_at_start_of_offpeak_tonight') | float(0) + states('sensor.soc_required_charge') | float(0) - (3 - states('sensor.soc_charge_time_decimal') | float(0)) * states('input_number.base_load') | float(0)) + states('input_number.boost_charge') | float(0)| round(2)%}
          {% set max = (states('sensor.soc_usableforcecharge') | float(0))%}
          {{ ([0, sum, max] | sort)[1] }}
   - sensor:
@@ -93,16 +93,16 @@ Paste the following directly into your Configuration.yaml file
         unit_of_measurement: 'kWh'
         device_class: energy
         state: |-
-         {% set sum = states('sensor.soc_at_end_of_offpeak_tonight_no_charge') | float(0) + states('sensor.solcast_forecast_tomorrow') | float(0) - (states('input_number.expected_consumption_tomorrow') | float(0) - (states('input_number.offpeak_window') | float(0) * states('input_number.base_load') | float(0))) - (states('input_number.base_load') | float(0) * states('sensor.soc_charge_start_time_decimal') | float(0)) | round(2)%}
+         {% set sum = states('sensor.soc_at_end_of_offpeak_tonight_no_charge') | float(0) + states('sensor.solcast_pv_forecast_tomorrow') | float(0) - (states('input_number.expected_consumption_tomorrow') | float(0) - (3 * states('input_number.base_load') | float(0))) - (states('input_number.base_load') | float(0) * states('sensor.soc_charge_start_time_decimal') | float(0)) | round(2)%}
          {% set max = (states('sensor.soc_usableforcecharge') | float(0))%}
-         {{ ([-10, sum, max] | sort)[1] }}
+         {{ ([0, sum, max] | sort)[1] }}
   - sensor:
       - name: "SoC at Start of Offpeak Tomorrow - With Charge"
         unique_id: "soc_start_of_offpeak_tomorrow_with_charge"
         unit_of_measurement: 'kWh'
         device_class: energy
         state: |-
-         {% set sum = states('sensor.soc_at_end_of_offpeak_tonight_with_charge') | float(0) + states('sensor.solcast_forecast_tomorrow') | float(0) - (states('input_number.expected_consumption_tomorrow') | float(0) - (states('input_number.offpeak_window') | float(0) * states('input_number.base_load') | float(0))) - (states('input_number.base_load') | float(0) * states('sensor.soc_charge_start_time_decimal') | float(0)) | round(2)%}
+         {% set sum = states('sensor.soc_at_end_of_offpeak_tonight_with_charge') | float(0) + states('sensor.solcast_pv_forecast_tomorrow') | float(0) - (states('input_number.expected_consumption_tomorrow') | float(0) - (states('input_number.offpeak_window') | float(0) * states('input_number.base_load') | float(0))) - (states('input_number.base_load') | float(0) * states('sensor.soc_charge_start_time_decimal') | float(0)) | round(2)%}
          {% set max = (states('sensor.soc_usableforcecharge') | float(0))%}
          {{ ([0, sum, max] | sort)[1] }}
   - sensor:
@@ -130,7 +130,7 @@ Paste the following directly into your Configuration.yaml file
         unique_id: "calculated_charge_current"
         unit_of_measurement: 'A'
         device_class: energy
-        state: "{{ (states('sensor.soc_usableforcecharge') | float(0) / states('input_number.offpeak_window') | float(0) * 1000 / 55 | float(0)) | round(0) }}"
+        state: "{{ (states('sensor.soc_usableforcecharge') | float(0) / 3 * 1000 / 55) | round(0) }}"
   - sensor:
       - name: "Auto Charge Scheduled"
         unique_id: "auto_charge_scheduled"
@@ -151,7 +151,7 @@ Paste the following directly into your Configuration.yaml file
   - sensor:
       - name: "soc_charge_start_time_decimal"
         unique_id: "soc_charge_start_time_decimal"
-        state: "{{((states('number.solax_timed_charge_start_minutes')| float(0) / 6 / 10)) + (states('number.solax_timed_charge_start_hours')| float(0)) | round(2) }}"
+        state: "{{((states('number.solax_timed_charge_start_m')| float(0) / 6 / 10)) + (states('number.solax_timed_charge_start_h')| float(0)) | round(2) }}"
   - sensor:
       - name: "soc_charge_end_time_decimal"
         unique_id: "soc_charge_end_time_decimal"
@@ -184,12 +184,12 @@ Paste the following directly into your Configuration.yaml file
       - name: "Charge Start Time"
         unique_id: "charge_start_time"
         state: >
-            {{0}}{{ states('number.solax_timed_charge_start_hours') | round(0) }}:{{ states('number.solax_timed_charge_start_minutes') | round(0) }}
+            {{0}}{{ states('number.solax_timed_charge_start_h') | round(0) }}:{{ states('number.solax_timed_charge_start_m') | round(0) }}
   - sensor:
       - name: "Charge End Time Set"
         unique_id: "charge_end_time_set"
         state: >
-            {{0}}{{ states('number.solax_timed_charge_end_hours') | round(0) }}:{{ states('number.solax_timed_charge_end_minutes') | round(0) }}
+            {{0}}{{ states('number.solax_timed_charge_end_h') | round(0) }}:{{ states('number.solax_timed_charge_end_m') | round(0) }}
 
 ##Consumption
   - sensor:
@@ -198,11 +198,6 @@ Paste the following directly into your Configuration.yaml file
         unit_of_measurement: 'kWh'
         device_class: energy
         state: "{{ states('input_number.expected_consumption')| float(0) - states('sensor.solax_house_load_today')| float(0) | round(2) }}"     
-  - sensor:
-      - name: "offpeak ratio"
-        unique_id: "offpeak ratio"
-        unit_of_measurement: '%'
-        state: "{{( 100 / ((states('sensor.octopus_flux_tariff_offpeak')| float(0) + states('sensor.octopus_flux_tariff_peak')| float(0) + states('sensor.octopus_flux_tariff_flux')| float(0))) * (states('sensor.octopus_flux_tariff_offpeak')| float(0))) | round(2) }}"
   - sensor:
       - name: "String 1 Output"
         unit_of_measurement: 'W'
