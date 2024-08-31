@@ -156,36 +156,36 @@ trigger:
     at: "23:55:00"
 condition: []
 action:
-  - service: input_number.set_value
-    data:
+  - data:
       value: "{{ states('sensor.solax_house_load_today') }}"
     target:
       entity_id: input_number.expected_consumption
+    action: input_number.set_value
   - delay:
       hours: 0
       minutes: 0
       seconds: 10
       milliseconds: 0
   - parallel:
-      - service: number.set_value
-        data:
+      - data:
           value: "{{ states('sensor.soc_charge_end_time_hhmm').split(':')[0] }}"
         target:
-          entity_id: number.solax_timed_charge_end_hours
-      - service: number.set_value
-        data:
+          entity_id: number.solax_timed_charge_end_h
+        action: number.set_value
+      - data:
           value: "{{ states('sensor.soc_charge_end_time_hhmm').split(':')[1] }}"
         target:
-          entity_id: number.solax_timed_charge_end_minutes
+          entity_id: number.solax_timed_charge_end_m
+        action: number.set_value
   - delay:
       hours: 0
       minutes: 0
       seconds: 10
       milliseconds: 0
-  - service: button.press
-    data: {}
+  - data: {}
     target:
       entity_id: button.solax_update_charge_discharge_times
+    action: button.press
 mode: single
 ```
 
